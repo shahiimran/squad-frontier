@@ -26,3 +26,16 @@ Open `index.html` in a modern browser. On desktop, click the map to move the com
 - v0.4: optional cloud save and rooms, which require a separate backend service.
 
 This is an independent learning project and is not affiliated with Roblox or the creators of any other game.
+
+
+## v0.3 — Castles & Armies
+- Added two stylized medieval castles with towers, keeps, walls and banners.
+- Added a recruit button that spends in-game gold to create additional soldiers.
+- Added a simple arcade siege order against the rival castle; wall sections visibly disappear as the abstract castle health decreases.
+- Added army count and gold HUD.
+- Combat is fictional and abstract; this prototype does not model real-world tactics or weapons.
+
+## v0.3 controls
+- Recruit: spend 50 gold to add a soldier.
+- Siege enemy castle: send your current army toward the rival fort.
+- Existing movement and camera controls remain available.

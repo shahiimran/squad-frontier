@@ -52,6 +52,61 @@ outposts.forEach(o=>{const p=commander.position.distanceTo(new THREE.Vector3(o.x
 scoreClock+=dt;if(scoreClock>1){scoreClock=0;outposts.forEach(o=>{if(o.owner===1)playerScore++;if(o.owner===-1)rivalScore++})}
 document.querySelector('#score').textContent=playerScore;document.querySelector('#rival').textContent=rivalScore;const t=Math.max(0,180-elapsed);document.querySelector('#time').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;document.querySelector('#zones').innerHTML=outposts.map(o=>`<div class="zone"><span>${o.name}</span><b>${o.owner===1?'YOU':o.owner===-1?'RIVAL':'NEUTRAL'}</b></div>`).join('');if(t<=0){active=false;document.querySelector('#intro').classList.remove('hide');document.querySelector('#intro h1').textContent=playerScore>=rivalScore?'Frontier secured!':'Round complete';document.querySelector('#intro p').textContent=`Final score — You ${playerScore}, Rival ${rivalScore}. Press play to restart.`;document.querySelector('#start').textContent='PLAY AGAIN'}}
 function cameraUpdate(){const target=commander.position.clone().add(new THREE.Vector3(0,1,0));const offset=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(zoom);camera.position.copy(target).add(offset);camera.lookAt(target)}
-let prev=0;function frame(t){const dt=Math.min((t-prev)/1000||0,.04);prev=t;update(dt);cameraUpdate();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+
+/* v0.3 medieval kingdom and army layer */
+const warUI=document.createElement('div');
+warUI.style.cssText='position:fixed;left:12px;top:76px;z-index:5;display:flex;gap:6px;flex-wrap:wrap;max-width:min(560px,95vw);pointer-events:auto';
+warUI.innerHTML='<div style="background:#101c2ddd;border:1px solid #38516b;border-radius:12px;padding:8px 10px;color:#fff;font:12px system-ui">🪙 <b id="gold">300</b> · 🪖 <b id="armyCount">4</b> soldiers</div><button id="recruit" style="background:#176b55;color:white;border:1px solid #3caa83;border-radius:9px;padding:9px 12px;font-weight:700">＋ Recruit (50)</button><button id="siege" style="background:#87472b;color:white;border:1px solid #d18b58;border-radius:9px;padding:9px 12px;font-weight:700">⚑ Siege enemy castle</button>';
+document.body.appendChild(warUI);
+let gold=300,army=[],siegeMode=false,enemyCastleHP=100;
+function buildCastle(cx,cz,team){
+ const group=new THREE.Group();group.position.set(cx,0,cz);scene.add(group);
+ const stone=mat(team===1?0x8496a8:0x9a7964),roof=mat(team===1?0x315b86:0x854332);
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(17,.7,15),stone);floor.position.y=.35;floor.receiveShadow=true;group.add(floor);
+ const walls=[];
+ for(let i=0;i<5;i++){
+  const w=new THREE.Mesh(new THREE.BoxGeometry(3.1,4.8,.9),stone);w.position.set(-6.4+i*3.2,2.7,7);w.castShadow=true;group.add(w);walls.push(w);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(3.1,4.8,.9),stone);back.position.set(-6.4+i*3.2,2.7,-7);back.castShadow=true;group.add(back);walls.push(back);
+ }
+ for(let i=0;i<4;i++){
+  const side=new THREE.Mesh(new THREE.BoxGeometry(.9,4.8,3.4),stone);side.position.set(i<2?-8:8,2.7,(i%2?3.5:-3.5));side.castShadow=true;group.add(side);walls.push(side);
+ }
+ for(const [x,z] of [[-8,-7],[8,-7],[-8,7],[8,7]]){
+  const tower=new THREE.Mesh(new THREE.CylinderGeometry(1.45,1.7,7,8),stone);tower.position.set(x,3.5,z);tower.castShadow=true;group.add(tower);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(1.8,2.8,8),roof);cap.position.set(x,8.2,z);cap.castShadow=true;group.add(cap);
+ }
+ const keep=new THREE.Mesh(new THREE.BoxGeometry(6,7,5),stone);keep.position.set(0,3.8,-1);keep.castShadow=true;group.add(keep);
+ const keepRoof=new THREE.Mesh(new THREE.ConeGeometry(4.5,3.5,4),roof);keepRoof.position.set(0,9,-1);keepRoof.rotation.y=Math.PI/4;group.add(keepRoof);
+ const banner=new THREE.Mesh(new THREE.BoxGeometry(.18,4,.18),woodMat);banner.position.set(0,9,2);group.add(banner);
+ const flag=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.2),mat(team===1?0x35a9ee:0xd96c48));flag.position.set(1.1,9.6,2);group.add(flag);
+ return {group,walls,hp:100,team,cx,cz};
+}
+const homeCastle=buildCastle(-35,28,1),enemyFort=buildCastle(35,-32,-1);
+const barracks=box(7,4,6,woodMat,-23,2,27);
+const enemyBarracks=box(7,4,6,woodMat,23,2,-31);
+function addSoldier(x,z,team=1){
+ const mesh=makePerson(team===1?0x268fd0:0xc46b43,.9);scene.add(mesh);mesh.position.set(x,0,z);
+ const unit={mesh,team,target:new THREE.Vector3(x,0,z),state:'idle',cooldown:0};army.push(unit);return unit;
+}
+helpers.forEach(h=>army.push({mesh:h.mesh,team:1,target:h.mesh.position.clone(),state:'follow',cooldown:0}));
+function refreshArmy(){document.querySelector('#gold').textContent=gold;document.querySelector('#armyCount').textContent=army.filter(u=>u.team===1).length}
+document.querySelector('#recruit').addEventListener('click',()=>{if(gold<50)return;gold-=50;const n=army.filter(u=>u.team===1).length;const a=addSoldier(-28+(n%3)*1.8,34+Math.floor(n/3)*1.8,1);a.state='follow';refreshArmy()});
+document.querySelector('#siege').addEventListener('click',()=>{siegeMode=true;army.filter(u=>u.team===1).forEach((u,i)=>{u.state='siege';u.target.set(35+(i%3-1)*2,0,-32+Math.floor(i/3)*2)})});
+function warUpdate(dt){
+ const leader=commander.position;
+ army.forEach((u,i)=>{
+  if(u.team!==1)return;
+  if(u.state==='follow' && i>=4){const off=new THREE.Vector3((i%3-1)*2,0,3+Math.floor(i/3)*1.7).applyAxisAngle(new THREE.Vector3(0,1,0),commander.rotation.y);u.target.copy(leader).add(off)}
+  if(u.state==='siege'){
+   const d=u.mesh.position.distanceTo(new THREE.Vector3(35,0,-32));
+   if(d>8)moveToward(u.mesh,u.target,5.5,dt);
+   else {u.cooldown-=dt;if(u.cooldown<=0&&enemyCastleHP>0){enemyCastleHP=Math.max(0,enemyCastleHP-2);u.cooldown=.8;const wall=enemyFort.walls.find(w=>w.visible);if(wall&&enemyCastleHP%10===0){wall.visible=false;wall.userData.broken=true}}}
+  }else if(u.state==='follow')moveToward(u.mesh,u.target,6,dt);
+ });
+ if(enemyCastleHP<=0){enemyFort.group.children.forEach((o,i)=>{if(o.isMesh&&i%3===0)o.visible=false});}
+ refreshArmy();
+}
+
+let prev=0;function frame(t){const dt=Math.min((t-prev)/1000||0,.04);prev=t;update(dt);warUpdate(dt);cameraUpdate();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 document.querySelector('#start').addEventListener('click',()=>{active=true;elapsed=0;playerScore=0;rivalScore=0;scoreClock=0;commander.position.set(0,0,12);commander.userData.target=null;helpers.forEach((u,i)=>{u.mesh.position.set((i%2?1:-1)*2,0,14+Math.floor(i/2)*1.8);u.mode='follow'});rival.position.set(32,0,-30);rival.userData.target=null;rivalUnits.forEach((u,i)=>u.position.set(30+(i%2)*2,0,-27+Math.floor(i/2)*2));outposts.forEach(o=>{o.owner=0;o.progress=0});setOrder('follow');document.querySelector('#intro').classList.add('hide')});
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6))});
