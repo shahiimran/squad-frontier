@@ -72,3 +72,10 @@ The game has expanded from a small squad demo into a larger browser-based mediev
 
 ### Notes and limitations
 This is an expanding prototype, not yet a finished commercial-scale game. Combat is fictional and abstract. The current AI and path movement are intentionally lightweight; advanced pathfinding, proper unit animations, deeper building placement, sound, campaign missions, online multiplayer, server-side saves and extensive mobile optimization remain future work. Three.js is loaded from jsDelivr, so the game needs an internet connection.
+
+
+## v0.5 — Modern UI refresh
+- Reworked the interface with a modern glass-style HUD, clearer hierarchy and responsive panels.
+- Improved resource readability, objective cards, command buttons, focus states and touch joystick styling.
+- Added reduced-motion support and smaller-screen layout refinements.
+- Existing Three.js gameplay code and controls are unchanged in this visual-only release.
