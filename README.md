@@ -39,3 +39,36 @@ This is an independent learning project and is not affiliated with Roblox or the
 - Recruit: spend 50 gold to add a soldier.
 - Siege enemy castle: send your current army toward the rival fort.
 - Existing movement and camera controls remain available.
+
+
+## v0.4 — Kingdoms: full gameplay foundation
+
+The game has expanded from a small squad demo into a larger browser-based medieval kingdom strategy prototype.
+
+### Current gameplay
+- Two stylized castles, a home settlement, rival keep, forests, rocks and paths.
+- Three recruitable troop classes: infantry, archers and knights, each with different health, speed, range and damage values.
+- Select individual friendly units or use Select Army; issue Follow, Hold and Move Selected orders.
+- Build farms and barracks; earn gold, wood, stone and food over time.
+- Upgrade the home castle through five levels.
+- Capture three neutral outposts for additional passive income.
+- Rival army patrol/approach behavior, reinforcements and abstract arcade-style unit encounters.
+- Enemy keep objective with a visible health value.
+- Local save/load using browser storage.
+- Desktop keyboard/mouse and mobile virtual joystick controls.
+
+### Controls
+- WASD / arrow keys: move commander.
+- Drag: orbit camera; mouse wheel: zoom.
+- Click a friendly troop: select it. Shift-click can add to selection.
+- Select Army: select all friendly troops.
+- Move Selected: tap/click a destination.
+- Follow / Hold: change selected troops' orders.
+- Capture Enemy Keep: send selected troops toward the rival keep.
+- Recruit buttons: spend food to create troop units.
+- Build Farm / Build Barracks: spend wood.
+- Upgrade Castle: spend stone.
+- Save / Load: store or restore a local kingdom save on this browser/device.
+
+### Notes and limitations
+This is an expanding prototype, not yet a finished commercial-scale game. Combat is fictional and abstract. The current AI and path movement are intentionally lightweight; advanced pathfinding, proper unit animations, deeper building placement, sound, campaign missions, online multiplayer, server-side saves and extensive mobile optimization remain future work. Three.js is loaded from jsDelivr, so the game needs an internet connection.

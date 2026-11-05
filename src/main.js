@@ -1,112 +1,75 @@
 import * as THREE from 'three';
 
-const mount=document.querySelector('#game');
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x9cc8db);scene.fog=new THREE.Fog(0x9cc8db,45,125);
-const camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.1,250);
+const $=id=>document.getElementById(id), mount=$('game');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x9fc4d5);scene.fog=new THREE.Fog(0x9fc4d5,75,190);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,350);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;mount.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xdaf2ff,0x456044,2.0));
-const sun=new THREE.DirectionalLight(0xfff0d5,2.3);sun.position.set(-25,42,22);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-48;sun.shadow.camera.right=48;sun.shadow.camera.top=48;sun.shadow.camera.bottom=-48;scene.add(sun);
-const mat=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
-const groundMat=mat(0x56804f),pathMat=mat(0xb6a17a),woodMat=mat(0x79553a),leafMat=mat(0x2e684e),rockMat=mat(0x71838b),blueMat=mat(0x28a9ef),goldMat=mat(0xf39a42);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(150,150,1,1),groundMat);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-const path=new THREE.Mesh(new THREE.RingGeometry(12,16,64),pathMat);path.rotation.x=-Math.PI/2;path.position.y=.025;scene.add(path);
-function box(w,h,d,material,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
-function tree(x,z,s=1){const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.32*s,1.8*s,7),woodMat);trunk.position.set(x,.9*s,z);trunk.castShadow=true;scene.add(trunk);for(let i=0;i<2;i++){const crown=new THREE.Mesh(new THREE.ConeGeometry(1.25*s-i*.2,2.2*s,7),leafMat);crown.position.set(x,2.2*s+i*.8*s,z);crown.castShadow=true;scene.add(crown)}}
-for(let i=0;i<95;i++){const a=Math.random()*Math.PI*2,r=18+Math.random()*48,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)<8&&Math.abs(z)<8)continue;tree(x,z,.65+Math.random()*.65)}
-for(let i=0;i<28;i++){const x=(Math.random()-.5)*100,z=(Math.random()-.5)*100;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.5+Math.random()*.8,0),rockMat);rock.position.set(x,.35,z);rock.rotation.set(Math.random(),Math.random(),Math.random());rock.castShadow=true;scene.add(rock)}
-// Small frontier settlement
-for(const [x,z,c] of [[-20,-18,0x9b795c],[-25,-13,0xb58a65],[23,-20,0x8d9c9b]]){const building=box(5,3.4,4,mat(c),x,1.7,z);const roof=new THREE.Mesh(new THREE.ConeGeometry(3.8,2.1,4),mat(0x514b48));roof.position.set(x,4.3,z);roof.rotation.y=Math.PI/4;roof.castShadow=true;scene.add(roof)}
-// Winding path as connected stepping stones
-for(let i=0;i<24;i++){const t=i/23,x=-42+t*84,z=12+Math.sin(t*Math.PI*2)*8;const stone=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.3,.12,8),pathMat);stone.position.set(x,.07,z);stone.receiveShadow=true;scene.add(stone)}
-function makePerson(color,scale=1){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CapsuleGeometry(.42*scale,.7*scale,4,8),mat(color));body.position.y=1.15*scale;body.castShadow=true;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.28*scale,12,10),mat(0xf0c69d));head.position.y=1.85*scale;head.castShadow=true;g.add(head);const pack=new THREE.Mesh(new THREE.BoxGeometry(.45*scale,.55*scale,.25*scale),mat(0x344b45));pack.position.set(0,1.18*scale,-.34*scale);g.add(pack);return g}
-const commander=makePerson(0x168ed1,1.08);scene.add(commander);commander.position.set(0,0,12);
-const helpers=[];for(let i=0;i<4;i++){const p=makePerson(0x42b7e8,.88);scene.add(p);p.position.set((i%2?1:-1)*2,0,14+Math.floor(i/2)*1.8);helpers.push({mesh:p,offset:new THREE.Vector3((i%2?1:-1)*2,0,3+Math.floor(i/2)*1.6),target:new THREE.Vector3(),mode:'follow'})}
-const rival=makePerson(0xd17b35,1.05);scene.add(rival);rival.position.set(32,0,-30);
-const rivalUnits=[];for(let i=0;i<4;i++){const p=makePerson(0xf0a25b,.85);scene.add(p);p.position.set(30+(i%2)*2,0,-27+Math.floor(i/2)*2);rivalUnits.push(p)}
-const outposts=[{name:'North Camp',x:-25,z:-22,owner:0,progress:0},{name:'River Crossing',x:0,z:-42,owner:0,progress:0},{name:'East Lookout',x:29,z:8,owner:0,progress:0}];
-for(const o of outposts){const ring=new THREE.Mesh(new THREE.CylinderGeometry(3.6,3.6,.12,40),new THREE.MeshStandardMaterial({color:0xe8e6c8,transparent:true,opacity:.65}));ring.position.set(o.x,.12,o.z);scene.add(ring);const pole=box(.12,4,.12,woodMat,o.x,2,o.z);const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1),mat(0xd9d9d9));flag.position.set(o.x+.9,3.25,o.z);scene.add(flag);o.ring=ring;o.flag=flag}
-const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
-let active=false,order='follow',moveSquad=false,elapsed=0,playerScore=0,rivalScore=0,scoreClock=0,rivalClock=0;
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;mount.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe6f4ff,0x4b6547,2));
+const sun=new THREE.DirectionalLight(0xffedce,2.1);sun.position.set(-45,70,35);sun.castShadow=true;sun.shadow.mapSize.set(1536,1536);sun.shadow.camera.left=-85;sun.shadow.camera.right=85;sun.shadow.camera.top=85;sun.shadow.camera.bottom=-85;scene.add(sun);
+const mat=(c,r=1)=>new THREE.MeshStandardMaterial({color:c,roughness:r});
+const M={grass:mat(0x557e4d),grass2:mat(0x668e59),stone:mat(0x89969b),dark:mat(0x3e4b55),wood:mat(0x79553a),roof:mat(0x73443b),blue:mat(0x238ec8),blue2:mat(0x68c6ef),red:mat(0xb9573e),red2:mat(0xf0a36a),gold:mat(0xe0b34d),path:mat(0xb4a17d),leaf:mat(0x2d6547),skin:mat(0xe7bd98),farm:mat(0x9b8c4b)};
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),M.grass);ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+const path=new THREE.Mesh(new THREE.RingGeometry(15,21,80),M.path);path.rotation.x=-Math.PI/2;path.position.y=.025;scene.add(path);
+function box(w,h,d,material,x,y,z,parent=scene){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function cylinder(rt,rb,h,material,x,y,z,parent=scene){const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,8),material);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function tree(x,z,s=1){cylinder(.22*s,.34*s,1.7*s,M.wood,x,.85*s,z);for(let i=0;i<3;i++){const crown=new THREE.Mesh(new THREE.ConeGeometry(1.25*s-i*.18,2.2*s,7),M.leaf);crown.position.set(x,2*s+i*.8*s,z);crown.castShadow=true;scene.add(crown)}}
+for(let i=0;i<210;i++){const a=Math.random()*Math.PI*2,r=25+Math.random()*78,x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)<17&&Math.abs(z)<17)continue;tree(x,z,.65+Math.random()*.65)}
+for(let i=0;i<45;i++){const x=(Math.random()-.5)*180,z=(Math.random()-.5)*180,rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.5+Math.random(),0),M.stone);rock.position.set(x,.35,z);rock.castShadow=true;scene.add(rock)}
+// Kingdom castles
+function castle(x,z,team,scale=1){const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(scale);scene.add(g);const wall=team===1?M.stone:mat(0x927d73),roof=team===1?M.blue:M.red;
+box(18,.8,17,wall,0,.4,0,g);for(let i=0;i<6;i++){box(2.7,5,.9,wall,-7+i*2.8,2.9,8.1,g);box(2.7,5,.9,wall,-7+i*2.8,2.9,-8.1,g)}
+for(let i=0;i<4;i++){box(.9,5,4,wall,i<2?-9:9,2.9,i%2?5:-5,g)}
+for(const [tx,tz] of [[-9,-8],[9,-8],[-9,8],[9,8]]){cylinder(1.55,1.8,7,wall,tx,3.5,tz,g);const cap=new THREE.Mesh(new THREE.ConeGeometry(2,3,8),roof);cap.position.set(tx,8.3,tz);g.add(cap)}
+box(6,8,6,wall,0,4.4,-1,g);const keepRoof=new THREE.Mesh(new THREE.ConeGeometry(5,4,4),roof);keepRoof.position.set(0,10,-1);keepRoof.rotation.y=Math.PI/4;g.add(keepRoof);box(.2,4,.2,M.wood,0,12,3,g);box(2,1.2,.12,roof,1,12.9,3,g);
+return {group:g,x,z,team,health:100,level:1};}
+const home=castle(-48,30,1,1.1),enemy=castle(54,-42,-1,1.15);
+function building(x,z,type,team=1){const g=new THREE.Group();g.position.set(x,0,z);scene.add(g);const c=team===1?M.stone:mat(0x9a7566),r=team===1?M.blue:M.red;box(type==='barracks'?8:7,3.5,6,c,0,1.75,0,g);const roof=new THREE.Mesh(new THREE.ConeGeometry(5.8,2.8,4),r);roof.position.y=4.8;roof.rotation.y=Math.PI/4;g.add(roof);return {group:g,x,z,type,team,level:1}}
+const buildings=[building(-30,28,'barracks'),building(-61,42,'farm'),building(39,-35,'barracks',-1)];
+// units
+const units=[],selected=new Set();let uid=1;
+function person(team,kind){const g=new THREE.Group();const col=team===1?M.blue:M.red;const scale=kind==='knight'?1.08:kind==='archer'?.88:1;const body=new THREE.Mesh(new THREE.CapsuleGeometry(.36*scale,.68*scale,4,8),col);body.position.y=1.05*scale;body.castShadow=true;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.24*scale,12,10),M.skin);head.position.y=1.75*scale;g.add(head);const helm=new THREE.Mesh(new THREE.ConeGeometry(.28*scale,.4*scale,6),team===1?M.blue2:M.red2);helm.position.y=2.02*scale;g.add(helm);const shield=new THREE.Mesh(new THREE.BoxGeometry(.16,.55,.4),team===1?M.gold:M.dark);shield.position.set(.38,1.05,.1);g.add(shield);if(kind==='archer'){const bow=new THREE.Mesh(new THREE.TorusGeometry(.25,.035,5,12,Math.PI),M.wood);bow.position.set(-.38,1.2,0);g.add(bow)}if(kind==='knight'){const cape=new THREE.Mesh(new THREE.BoxGeometry(.45,.8,.12),team===1?M.blue2:M.red2);cape.position.set(0,1.1,-.32);g.add(cape)}return g}
+function addUnit(team,kind,x,z){const mesh=person(team,kind);mesh.position.set(x,0,z);scene.add(mesh);const u={id:uid++,team,kind,mesh,hp:kind==='knight'?150:kind==='archer'?65:100,max:kind==='knight'?150:kind==='archer'?65:100,speed:kind==='knight'?5.4:kind==='archer'?4.5:4.8,damage:kind==='knight'?17:kind==='archer'?12:10,range:kind==='archer'?11:2.5,order:team===1?'follow':'defend',target:new THREE.Vector3(x,0,z),cool:Math.random(),alive:true};units.push(u);return u}
+for(let i=0;i<5;i++)addUnit(1,'infantry',-42+(i%3)*2,39+Math.floor(i/3)*2);
+for(let i=0;i<7;i++)addUnit(-1,i%3===0?'archer':'infantry',48+(i%3)*2,-35+Math.floor(i/3)*2);
+const outposts=[{name:'Old Bridge',x:-4,z:2,owner:0,p:0},{name:'Windmill Hill',x:29,z:28,owner:0,p:0},{name:'Pinewatch',x:3,z:-48,owner:0,p:0}];
+for(const o of outposts){const ring=new THREE.Mesh(new THREE.CylinderGeometry(4.5,4.5,.14,40),new THREE.MeshStandardMaterial({color:0xe9dfba,transparent:true,opacity:.75}));ring.position.set(o.x,.12,o.z);scene.add(ring);cylinder(.12,.16,4,M.wood,o.x,2,o.z);const flag=box(1.8,1,.12,M.gold,o.x+1,3.2,o.z);o.ring=ring;o.flag=flag}
+let resources={gold:500,wood:250,stone:200,food:300},castleLevel=1,paused=true,started=false,selectedMode=false,moveMode=false,attackMode=false,clock=0,score=0,toastTimer;
+function notify(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1900);$('log').textContent=s}
+function updateHUD(){$('gold').textContent=Math.floor(resources.gold);$('wood').textContent=Math.floor(resources.wood);$('stone').textContent=Math.floor(resources.stone);$('food').textContent=Math.floor(resources.food);$('army').textContent=units.filter(u=>u.alive&&u.team===1).length;$('objectives').innerHTML=outposts.map(o=>'<div class="obj"><span>'+o.name+'</span><b>'+(o.owner===1?'YOU':o.owner===-1?'RIVAL':'NEUTRAL')+'</b></div>').join('')+'<div class="obj"><span>Enemy keep</span><b>'+Math.max(0,Math.ceil(enemy.health))+'%</b></div>'}
+function recruit(kind){const cost={infantry:60,archer:80,knight:130}[kind];if(resources.food<cost){notify('Not enough food to recruit.');return}resources.food-=cost;const n=units.filter(u=>u.alive&&u.team===1).length;const u=addUnit(1,kind,-43+(n%4)*2,43+Math.floor(n/4)*2);u.order='follow';notify(kind+' recruited.');updateHUD()}
+$('recruitInf').onclick=()=>recruit('infantry');$('recruitArch').onclick=()=>recruit('archer');$('recruitKnight').onclick=()=>recruit('knight');
+$('buildFarm').onclick=()=>{if(resources.wood<90)return notify('Need 90 wood.');resources.wood-=90;const n=buildings.filter(b=>b.team===1&&b.type==='farm').length;buildings.push(building(-65+n*9,53,'farm'));notify('Farm built. Food income increased.');updateHUD()};
+$('buildBarracks').onclick=()=>{if(resources.wood<120)return notify('Need 120 wood.');resources.wood-=120;const n=buildings.filter(b=>b.team===1&&b.type==='barracks').length;buildings.push(building(-26+n*10,42,'barracks'));notify('Barracks built.');updateHUD()};
+$('upgrade').onclick=()=>{if(resources.stone<120)return notify('Need 120 stone.');if(castleLevel>=5)return notify('Castle is max level.');resources.stone-=120;castleLevel++;home.level=castleLevel;home.group.scale.setScalar(1.1+(castleLevel-1)*.08);home.health=100;notify('Castle upgraded to level '+castleLevel);updateHUD()};
+function selectAll(){selected.clear();units.filter(u=>u.alive&&u.team===1).forEach(u=>selected.add(u.id));notify(selected.size+' soldiers selected')}
+$('selectArmy').onclick=selectAll;$('follow').onclick=()=>{selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u)u.order='follow'});notify('Selected troops following commander.')};$('hold').onclick=()=>{selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u){u.order='hold';u.target.copy(u.mesh.position)}});notify('Selected troops holding position.')};$('move').onclick=()=>{moveMode=true;notify('Tap the map to move selected troops.')};$('attack').onclick=()=>{attackMode=true;selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u)u.order='siege'});notify('Select your army, then press Capture Enemy Keep.')};
+$('save').onclick=()=>{const data={resources,castleLevel,units:units.filter(u=>u.alive&&u.team===1).map(u=>({kind:u.kind,x:u.mesh.position.x,z:u.mesh.position.z})),outposts:outposts.map(o=>({owner:o.owner,p:o.p})),enemyHealth:enemy.health};localStorage.setItem('sf-kingdom-save',JSON.stringify(data));notify('Kingdom saved on this device.')};
+$('load').onclick=()=>{const raw=localStorage.getItem('sf-kingdom-save');if(!raw)return notify('No local save found.');const d=JSON.parse(raw);resources=d.resources;castleLevel=d.castleLevel;home.group.scale.setScalar(1.1+(castleLevel-1)*.08);units.filter(u=>u.team===1).forEach(u=>{u.alive=false;scene.remove(u.mesh)});d.units.forEach(v=>addUnit(1,v.kind,v.x,v.z));d.outposts.forEach((v,i)=>{outposts[i].owner=v.owner;outposts[i].p=v.p});enemy.health=d.enemyHealth;updateHUD();notify('Kingdom loaded.')};
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause';notify(paused?'Game paused.':'Game resumed.')};
+$('start').onclick=()=>{$('intro').classList.add('hidden');paused=false;started=true;notify('Your kingdom is ready.');updateHUD()};
 const keys=new Set();addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault()});addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
-let yaw=0,pitch=.55,zoom=15,dragging=false,lastX=0,lastY=0,startX=0,startY=0;
-renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;startX=e.clientX;startY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
-renderer.domElement.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;yaw-=dx*.006;pitch=THREE.MathUtils.clamp(pitch+dy*.004,.22,1.15);lastX=e.clientX;lastY=e.clientY});
-renderer.domElement.addEventListener('pointerup',e=>{if(!dragging)return;const moved=Math.hypot(e.clientX-startX,e.clientY-startY);dragging=false;if(moved<8&&active)commandAt(e.clientX,e.clientY)});
-renderer.domElement.addEventListener('wheel',e=>{zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.015,8,28)},{passive:true});
-function commandAt(x,y){const r=renderer.domElement.getBoundingClientRect();pointer.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);raycaster.ray.intersectPlane(groundPlane,hit);if(moveSquad){helpers.forEach((u,i)=>{u.mode='move';u.target.set(hit.x+(i%2?1.8:-1.8),0,hit.z+Math.floor(i/2)*1.8)});moveSquad=false;setOrder('follow')}else commander.userData.target=new THREE.Vector3(hit.x,0,hit.z)}
-function setOrder(next){order=next;document.querySelectorAll('[data-order]').forEach(b=>b.classList.toggle('active',b.dataset.order===next));moveSquad=next==='move';helpers.forEach((u,i)=>{if(next==='follow')u.mode='follow';if(next==='hold'){u.mode='hold';u.target.copy(u.mesh.position)} });}
-document.querySelectorAll('[data-order]').forEach(b=>b.addEventListener('click',()=>setOrder(b.dataset.order)));
-document.querySelector('#regroup').addEventListener('click',()=>{helpers.forEach(u=>u.mode='follow');setOrder('follow')});
-const joystick=document.querySelector('#joystick'),stick=document.querySelector('#stick');let joy={x:0,y:0},joyOn=false;
-joystick.addEventListener('pointerdown',e=>{joyOn=true;joystick.setPointerCapture(e.pointerId);moveJoy(e)});
-joystick.addEventListener('pointermove',e=>{if(joyOn)moveJoy(e)});
-joystick.addEventListener('pointerup',()=>{joyOn=false;joy={x:0,y:0};stick.style.transform='translate(0,0)'});
-function moveJoy(e){const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let x=e.clientX-cx,y=e.clientY-cy;const d=Math.hypot(x,y),m=34;if(d>m){x=x/d*m;y=y/d*m}joy={x:x/m,y:y/m};stick.style.transform=`translate(${x}px,${y}px)`}
-function moveToward(obj,target,speed,dt){const d=target.clone().sub(obj.position);d.y=0;if(d.length()>.12){d.normalize();obj.position.addScaledVector(d,speed*dt);obj.rotation.y=Math.atan2(d.x,d.z)}}
-function update(dt){if(!active)return;elapsed+=dt;const forward=(keys.has('w')||keys.has('arrowup')?-1:0)+(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y;const side=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;const dir=new THREE.Vector3(side,0,forward);if(dir.lengthSq()>0){dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);commander.position.addScaledVector(dir,9*dt);commander.userData.target=null;commander.rotation.y=Math.atan2(dir.x,dir.z)}else if(commander.userData.target){moveToward(commander,commander.userData.target,8,dt);if(commander.position.distanceTo(commander.userData.target)<.4)commander.userData.target=null}
-helpers.forEach((u,i)=>{if(u.mode==='follow'){const target=u.offset.clone().applyAxisAngle(new THREE.Vector3(0,1,0),commander.rotation.y).add(commander.position);moveToward(u.mesh,target,7,dt)}else if(u.mode==='move'){moveToward(u.mesh,u.target,7,dt);if(u.mesh.position.distanceTo(u.target)<.5)u.mode='hold'}});
-rivalClock+=dt;if(rivalClock>8){rivalClock=0;const target=outposts.reduce((a,b)=>Math.abs(b.x-rival.position.x)+Math.abs(b.z-rival.position.z)<Math.abs(a.x-rival.position.x)+Math.abs(a.z-rival.position.z)?b:a);rival.userData.target=new THREE.Vector3(target.x,0,target.z+2);rivalUnits.forEach((u,i)=>u.userData.target=new THREE.Vector3(target.x+(i%2?2:-2),0,target.z+Math.floor(i/2)*2))}
-if(rival.userData.target){moveToward(rival,rival.userData.target,4.5,dt);rivalUnits.forEach(u=>moveToward(u,u.userData.target||rival.userData.target,4.2,dt))}
-outposts.forEach(o=>{const p=commander.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<5?1:0;const squad=helpers.filter(u=>u.mesh.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<5).length;const r=rival.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<5?1:0;const rp=rivalUnits.filter(u=>u.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<5).length;const delta=(p+squad*.5)-(r+rp*.5);o.progress=THREE.MathUtils.clamp(o.progress+delta*dt*12,-100,100);if(o.progress>95)o.owner=1;if(o.progress< -95)o.owner=-1;o.ring.material.color.set(o.owner===1?0x35baff:o.owner===-1?0xffa65e:0xe8e6c8);o.flag.material.color.set(o.owner===1?0x35baff:o.owner===-1?0xffa65e:0xd9d9d9)});
-scoreClock+=dt;if(scoreClock>1){scoreClock=0;outposts.forEach(o=>{if(o.owner===1)playerScore++;if(o.owner===-1)rivalScore++})}
-document.querySelector('#score').textContent=playerScore;document.querySelector('#rival').textContent=rivalScore;const t=Math.max(0,180-elapsed);document.querySelector('#time').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;document.querySelector('#zones').innerHTML=outposts.map(o=>`<div class="zone"><span>${o.name}</span><b>${o.owner===1?'YOU':o.owner===-1?'RIVAL':'NEUTRAL'}</b></div>`).join('');if(t<=0){active=false;document.querySelector('#intro').classList.remove('hide');document.querySelector('#intro h1').textContent=playerScore>=rivalScore?'Frontier secured!':'Round complete';document.querySelector('#intro p').textContent=`Final score — You ${playerScore}, Rival ${rivalScore}. Press play to restart.`;document.querySelector('#start').textContent='PLAY AGAIN'}}
-function cameraUpdate(){const target=commander.position.clone().add(new THREE.Vector3(0,1,0));const offset=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(zoom);camera.position.copy(target).add(offset);camera.lookAt(target)}
-
-/* v0.3 medieval kingdom and army layer */
-const warUI=document.createElement('div');
-warUI.style.cssText='position:fixed;left:12px;top:76px;z-index:5;display:flex;gap:6px;flex-wrap:wrap;max-width:min(560px,95vw);pointer-events:auto';
-warUI.innerHTML='<div style="background:#101c2ddd;border:1px solid #38516b;border-radius:12px;padding:8px 10px;color:#fff;font:12px system-ui">🪙 <b id="gold">300</b> · 🪖 <b id="armyCount">4</b> soldiers</div><button id="recruit" style="background:#176b55;color:white;border:1px solid #3caa83;border-radius:9px;padding:9px 12px;font-weight:700">＋ Recruit (50)</button><button id="siege" style="background:#87472b;color:white;border:1px solid #d18b58;border-radius:9px;padding:9px 12px;font-weight:700">⚑ Siege enemy castle</button>';
-document.body.appendChild(warUI);
-let gold=300,army=[],siegeMode=false,enemyCastleHP=100;
-function buildCastle(cx,cz,team){
- const group=new THREE.Group();group.position.set(cx,0,cz);scene.add(group);
- const stone=mat(team===1?0x8496a8:0x9a7964),roof=mat(team===1?0x315b86:0x854332);
- const floor=new THREE.Mesh(new THREE.BoxGeometry(17,.7,15),stone);floor.position.y=.35;floor.receiveShadow=true;group.add(floor);
- const walls=[];
- for(let i=0;i<5;i++){
-  const w=new THREE.Mesh(new THREE.BoxGeometry(3.1,4.8,.9),stone);w.position.set(-6.4+i*3.2,2.7,7);w.castShadow=true;group.add(w);walls.push(w);
-  const back=new THREE.Mesh(new THREE.BoxGeometry(3.1,4.8,.9),stone);back.position.set(-6.4+i*3.2,2.7,-7);back.castShadow=true;group.add(back);walls.push(back);
- }
- for(let i=0;i<4;i++){
-  const side=new THREE.Mesh(new THREE.BoxGeometry(.9,4.8,3.4),stone);side.position.set(i<2?-8:8,2.7,(i%2?3.5:-3.5));side.castShadow=true;group.add(side);walls.push(side);
- }
- for(const [x,z] of [[-8,-7],[8,-7],[-8,7],[8,7]]){
-  const tower=new THREE.Mesh(new THREE.CylinderGeometry(1.45,1.7,7,8),stone);tower.position.set(x,3.5,z);tower.castShadow=true;group.add(tower);
-  const cap=new THREE.Mesh(new THREE.ConeGeometry(1.8,2.8,8),roof);cap.position.set(x,8.2,z);cap.castShadow=true;group.add(cap);
- }
- const keep=new THREE.Mesh(new THREE.BoxGeometry(6,7,5),stone);keep.position.set(0,3.8,-1);keep.castShadow=true;group.add(keep);
- const keepRoof=new THREE.Mesh(new THREE.ConeGeometry(4.5,3.5,4),roof);keepRoof.position.set(0,9,-1);keepRoof.rotation.y=Math.PI/4;group.add(keepRoof);
- const banner=new THREE.Mesh(new THREE.BoxGeometry(.18,4,.18),woodMat);banner.position.set(0,9,2);group.add(banner);
- const flag=new THREE.Mesh(new THREE.PlaneGeometry(2.2,1.2),mat(team===1?0x35a9ee:0xd96c48));flag.position.set(1.1,9.6,2);group.add(flag);
- return {group,walls,hp:100,team,cx,cz};
-}
-const homeCastle=buildCastle(-35,28,1),enemyFort=buildCastle(35,-32,-1);
-const barracks=box(7,4,6,woodMat,-23,2,27);
-const enemyBarracks=box(7,4,6,woodMat,23,2,-31);
-function addSoldier(x,z,team=1){
- const mesh=makePerson(team===1?0x268fd0:0xc46b43,.9);scene.add(mesh);mesh.position.set(x,0,z);
- const unit={mesh,team,target:new THREE.Vector3(x,0,z),state:'idle',cooldown:0};army.push(unit);return unit;
-}
-helpers.forEach(h=>army.push({mesh:h.mesh,team:1,target:h.mesh.position.clone(),state:'follow',cooldown:0}));
-function refreshArmy(){document.querySelector('#gold').textContent=gold;document.querySelector('#armyCount').textContent=army.filter(u=>u.team===1).length}
-document.querySelector('#recruit').addEventListener('click',()=>{if(gold<50)return;gold-=50;const n=army.filter(u=>u.team===1).length;const a=addSoldier(-28+(n%3)*1.8,34+Math.floor(n/3)*1.8,1);a.state='follow';refreshArmy()});
-document.querySelector('#siege').addEventListener('click',()=>{siegeMode=true;army.filter(u=>u.team===1).forEach((u,i)=>{u.state='siege';u.target.set(35+(i%3-1)*2,0,-32+Math.floor(i/3)*2)})});
-function warUpdate(dt){
- const leader=commander.position;
- army.forEach((u,i)=>{
-  if(u.team!==1)return;
-  if(u.state==='follow' && i>=4){const off=new THREE.Vector3((i%3-1)*2,0,3+Math.floor(i/3)*1.7).applyAxisAngle(new THREE.Vector3(0,1,0),commander.rotation.y);u.target.copy(leader).add(off)}
-  if(u.state==='siege'){
-   const d=u.mesh.position.distanceTo(new THREE.Vector3(35,0,-32));
-   if(d>8)moveToward(u.mesh,u.target,5.5,dt);
-   else {u.cooldown-=dt;if(u.cooldown<=0&&enemyCastleHP>0){enemyCastleHP=Math.max(0,enemyCastleHP-2);u.cooldown=.8;const wall=enemyFort.walls.find(w=>w.visible);if(wall&&enemyCastleHP%10===0){wall.visible=false;wall.userData.broken=true}}}
-  }else if(u.state==='follow')moveToward(u.mesh,u.target,6,dt);
- });
- if(enemyCastleHP<=0){enemyFort.group.children.forEach((o,i)=>{if(o.isMesh&&i%3===0)o.visible=false});}
- refreshArmy();
-}
-
-let prev=0;function frame(t){const dt=Math.min((t-prev)/1000||0,.04);prev=t;update(dt);warUpdate(dt);cameraUpdate();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
-document.querySelector('#start').addEventListener('click',()=>{active=true;elapsed=0;playerScore=0;rivalScore=0;scoreClock=0;commander.position.set(0,0,12);commander.userData.target=null;helpers.forEach((u,i)=>{u.mesh.position.set((i%2?1:-1)*2,0,14+Math.floor(i/2)*1.8);u.mode='follow'});rival.position.set(32,0,-30);rival.userData.target=null;rivalUnits.forEach((u,i)=>u.position.set(30+(i%2)*2,0,-27+Math.floor(i/2)*2));outposts.forEach(o=>{o.owner=0;o.progress=0});setOrder('follow');document.querySelector('#intro').classList.add('hide')});
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.6))});
+let yaw=.35,pitch=.65,zoom=27,drag=false,lastX=0,lastY=0,startX=0,startY=0;const ray=new THREE.Raycaster(),pointer=new THREE.Vector2(),plane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
+renderer.domElement.addEventListener('pointerdown',e=>{drag=true;lastX=startX=e.clientX;lastY=startY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;yaw-=dx*.006;pitch=THREE.MathUtils.clamp(pitch+dy*.004,.25,1.2);lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener('pointerup',e=>{if(!drag)return;const dist=Math.hypot(e.clientX-startX,e.clientY-startY);drag=false;if(dist<8&&started&&!paused)groundClick(e.clientX,e.clientY)});
+renderer.domElement.addEventListener('wheel',e=>zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.02,13,48),{passive:true});
+function groundClick(x,y){const r=renderer.domElement.getBoundingClientRect();pointer.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);ray.setFromCamera(pointer,camera);ray.ray.intersectPlane(plane,hit);if(moveMode){selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u){u.order='move';u.target.set(hit.x+(Math.random()-.5)*3,0,hit.z+(Math.random()-.5)*3)}});moveMode=false;return}if(attackMode){selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u){u.order='siege';u.target.set(enemy.x,0,enemy.z)}});attackMode=false;return}
+const clicked=units.find(u=>u.team===1&&u.alive&&u.mesh.position.distanceTo(hit)<1.5);if(clicked){if(!keys.has('shift'))selected.clear();selected.add(clicked.id);notify(selected.size+' selected');return}
+if(selected.size){selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u){u.order='move';u.target.set(hit.x+(Math.random()-.5)*4,0,hit.z+(Math.random()-.5)*4)}})}else commanderTarget.set(hit.x,0,hit.z)}
+const commander={position:new THREE.Vector3(-43,0,48),rotation:{y:0}},commanderTarget=new THREE.Vector3(-43,0,48);const avatar=person(1,'knight');scene.add(avatar);avatar.position.copy(commander.position);
+function moveToward(u,target,speed,dt){const d=target.clone().sub(u.mesh.position);d.y=0;if(d.length()>.3){d.normalize();u.mesh.position.addScaledVector(d,speed*dt);u.mesh.rotation.y=Math.atan2(d.x,d.z)}}
+function ai(dt){const enemies=units.filter(u=>u.team===-1&&u.alive),friends=units.filter(u=>u.team===1&&u.alive);for(const e of enemies){let near=friends.filter(f=>f.mesh.position.distanceTo(e.mesh.position)<(e.range+f.range+3)).sort((a,b)=>a.mesh.position.distanceTo(e.mesh.position)-b.mesh.position.distanceTo(e.mesh.position))[0];if(near){e.cool-=dt;if(e.cool<=0){near.hp-=e.damage;e.cool=1.4;if(near.hp<=0){near.alive=false;scene.remove(near.mesh);selected.delete(near.id)}}}else{const goal=new THREE.Vector3(home.x+8,0,home.z+8);moveToward(e,goal,e.speed*.65,dt)}}}
+function battles(dt){const friends=units.filter(u=>u.alive&&u.team===1),enemies=units.filter(u=>u.alive&&u.team===-1);for(const u of friends){if(u.order==='follow'){const offset=new THREE.Vector3(((u.id%3)-1)*2.5,0,5+Math.floor(u.id%4)*1.5).applyAxisAngle(new THREE.Vector3(0,1,0),avatar.rotation.y);u.target.copy(avatar.position).add(offset);moveToward(u,u.target,u.speed,dt)}else if(u.order==='move'||u.order==='siege')moveToward(u,u.target,u.speed,dt);
+let foe=enemies.filter(e=>e.mesh.position.distanceTo(u.mesh.position)<u.range+2).sort((a,b)=>a.mesh.position.distanceTo(u.mesh.position)-b.mesh.position.distanceTo(u.mesh.position))[0];if(foe){u.cool-=dt;if(u.cool<=0){foe.hp-=u.damage;u.cool=u.kind==='archer'?1.25:1;if(foe.hp<=0){foe.alive=false;scene.remove(foe.mesh);resources.gold+=12;resources.food+=8}}}
+if(u.order==='siege'&&u.mesh.position.distanceTo(new THREE.Vector3(enemy.x,0,enemy.z))<15){u.cool-=dt;if(u.cool<=0){enemy.health=Math.max(0,enemy.health-1.5);u.cool=1.2}}}
+for(const o of outposts){let p=friends.filter(u=>u.mesh.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<7).length,e=enemies.filter(u=>u.mesh.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<7).length;const delta=p-e;o.p=THREE.MathUtils.clamp(o.p+delta*dt*.12,-1,1);if(o.p>.95)o.owner=1;if(o.p<-.95)o.owner=-1;o.ring.material.color.set(o.owner===1?0x42baff:o.owner===-1?0xf08b60:0xe9dfba);o.flag.material.color.set(o.owner===1?0x238ec8:o.owner===-1?0xb9573e:0xe0b34d)}
+if(enemy.health<=0){enemy.health=0;notify('Victory! The rival keep has fallen.');paused=true}}
+let income=0,aiSpawn=0;function economy(dt){income+=dt;if(income>=5){income=0;resources.gold+=8+outposts.filter(o=>o.owner===1).length*3;resources.wood+=buildings.filter(b=>b.team===1&&b.type==='farm').length*4;resources.food+=buildings.filter(b=>b.team===1&&b.type==='farm').length*5;resources.stone+=2}}
+function rival(dt){aiSpawn+=dt;if(aiSpawn>28&&units.filter(u=>u.team===-1&&u.alive).length<15){aiSpawn=0;addUnit(-1,Math.random()>.7?'archer':'infantry',50+Math.random()*5,-36+Math.random()*5)}}
+function update(dt){if(paused)return;clock+=dt;const forward=(keys.has('w')||keys.has('arrowup')?-1:0)+(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y,side=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;const dir=new THREE.Vector3(side,0,forward);if(dir.lengthSq()){dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);avatar.position.addScaledVector(dir,10*dt);avatar.rotation.y=Math.atan2(dir.x,dir.z);commander.rotation.y=avatar.rotation.y;commander.position.copy(avatar.position)}else if(avatar.position.distanceTo(commanderTarget)>.5&&selected.size===0)moveToward({mesh:avatar},commanderTarget,8,dt);battles(dt);ai(dt);rival(dt);economy(dt);updateHUD()}
+let joy={x:0,y:0},joyOn=false;const stick=$('mobileStick'),nub=$('nub');stick.addEventListener('pointerdown',e=>{joyOn=true;stick.setPointerCapture(e.pointerId);moveJoy(e)});stick.addEventListener('pointermove',e=>{if(joyOn)moveJoy(e)});stick.addEventListener('pointerup',()=>{joyOn=false;joy={x:0,y:0};nub.style.transform='translate(0,0)'});function moveJoy(e){const r=stick.getBoundingClientRect();let x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),d=Math.hypot(x,y),m=34;if(d>m){x=x/d*m;y=y/d*m}joy={x:x/m,y:y/m};nub.style.transform='translate('+x+'px,'+y+'px)'}
+function cameraUpdate(){const target=avatar.position.clone().add(new THREE.Vector3(0,1,0));const off=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(zoom);camera.position.copy(target).add(off);camera.lookAt(target)}
+let prev=0;function frame(t){const dt=Math.min((t-prev)/1000||0,.04);prev=t;update(dt);cameraUpdate();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))});
+updateHUD();
