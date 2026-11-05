@@ -29,10 +29,10 @@ for(const o of outposts){const ring=new THREE.Mesh(new THREE.CylinderGeometry(3.
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0),hit=new THREE.Vector3();
 let active=false,order='follow',moveSquad=false,elapsed=0,playerScore=0,rivalScore=0,scoreClock=0,rivalClock=0;
 const keys=new Set();addEventListener('keydown',e=>{keys.add(e.key.toLowerCase());if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase()))e.preventDefault()});addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
-let yaw=0,pitch=.55,zoom=15,dragging=false,lastX=0,lastY=0;
-renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
+let yaw=0,pitch=.55,zoom=15,dragging=false,lastX=0,lastY=0,startX=0,startY=0;
+renderer.domElement.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;startX=e.clientX;startY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)});
 renderer.domElement.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;yaw-=dx*.006;pitch=THREE.MathUtils.clamp(pitch+dy*.004,.22,1.15);lastX=e.clientX;lastY=e.clientY});
-renderer.domElement.addEventListener('pointerup',e=>{if(!dragging)return;const moved=Math.hypot(e.clientX-lastX,e.clientY-lastY);dragging=false;if(moved<8&&active)commandAt(e.clientX,e.clientY)});
+renderer.domElement.addEventListener('pointerup',e=>{if(!dragging)return;const moved=Math.hypot(e.clientX-startX,e.clientY-startY);dragging=false;if(moved<8&&active)commandAt(e.clientX,e.clientY)});
 renderer.domElement.addEventListener('wheel',e=>{zoom=THREE.MathUtils.clamp(zoom+e.deltaY*.015,8,28)},{passive:true});
 function commandAt(x,y){const r=renderer.domElement.getBoundingClientRect();pointer.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);raycaster.ray.intersectPlane(groundPlane,hit);if(moveSquad){helpers.forEach((u,i)=>{u.mode='move';u.target.set(hit.x+(i%2?1.8:-1.8),0,hit.z+Math.floor(i/2)*1.8)});moveSquad=false;setOrder('follow')}else commander.userData.target=new THREE.Vector3(hit.x,0,hit.z)}
 function setOrder(next){order=next;document.querySelectorAll('[data-order]').forEach(b=>b.classList.toggle('active',b.dataset.order===next));moveSquad=next==='move';helpers.forEach((u,i)=>{if(next==='follow')u.mode='follow';if(next==='hold'){u.mode='hold';u.target.copy(u.mesh.position)} });}
