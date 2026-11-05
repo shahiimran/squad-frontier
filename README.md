@@ -99,3 +99,25 @@ This release introduces a Command-and-Army-inspired battlefield interface and co
 - Existing recruitable infantry, archers, knights, unit selection and battlefield remain in place.
 
 This is a gameplay foundation/prototype. Formation presets currently set command intent in the UI; full geometric formation movement, animated horse locomotion, dedicated mounted combat, real healing balance, and touch camera/targeting polish remain future work.
+
+
+## v1.1 — Ultimate Command Campaign (development preview)
+This release expands the original Three.js prototype toward the supplied third-person army-command reference while keeping original procedural assets and browser gameplay.
+
+### Included in this preview
+- Landscape-first mobile HUD from v1.0, portrait rotation prompt and browser-dependent fullscreen/orientation request.
+- Unified Kingdom Command panel with Army, Realm, Trade, Diplomacy, Campaign and World tabs.
+- Additional troop recruitment choices: spearmen, cavalry and royal guards, with differentiated stats and simple procedural visual equipment.
+- Working line/block/wedge follow positioning, Rush/Attack/Follow/Hold orders, squad selection and commander mount toggle.
+- New lightweight trade actions, worker count, watchtower construction, campaign objectives and achievement notifications.
+- Expanded stylized environment with a river crossing, bridge, hills and animated villagers.
+- Clear/rain/fog visual presets, a day/night lighting cycle and four campaign season labels.
+- Extended local campaign save metadata while preserving the existing save slot and original resource/unit/outpost data.
+
+### Controls
+- Desktop: WASD to move, drag to orbit, mouse wheel to zoom, click the ground to issue movement commands.
+- Mobile: rotate to landscape, use the on-screen joystick, drag to orbit and tap the ground to command.
+- Use Rush, Attack, Follow and Hold to direct selected allied units. Open Kingdom Command for recruitment, trade, realm management and campaign objectives.
+
+### Known limitations
+This is a playable prototype expansion, not a finished commercial-scale 3D war game. Weather presets are visual approximations; seasonal labels do not yet alter terrain; diplomacy is a local state prototype; workers are decorative; cavalry uses simple procedural visuals rather than full horse rigs; castle siege, mounted combat, multiplayer, persistent cloud saves, full village simulation and advanced tactical enemy formations still need dedicated implementation and device testing. Browser fullscreen/orientation locking is not supported by every mobile browser.
