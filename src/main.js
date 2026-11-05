@@ -269,9 +269,9 @@ document.querySelectorAll('[data-tab]').forEach(btn=>btn.onclick=()=>{empireTab=
 function setWeather(w){
  campaign.weather=w;
  scene.fog.density=0;
- if(w==='Fog'){scene.fog=new THREE.FogExp2(0x9aa9ad,.012);renderer.setClearColor(0x9aa9ad);sun.intensity=1.05}
- else if(w==='Rain'){scene.fog=new THREE.Fog(0x788b98,35,125);renderer.setClearColor(0x788b98);sun.intensity=.85}
- else{scene.fog=new THREE.Fog(0x9fc4d5,75,190);renderer.setClearColor(0x9fc4d5);sun.intensity=2.1}
+ if(w==='Fog'){scene.background=new THREE.Color(0x9aa9ad);scene.fog=new THREE.FogExp2(0x9aa9ad,.012);sun.intensity=1.05}
+ else if(w==='Rain'){scene.background=new THREE.Color(0x788b98);scene.fog=new THREE.Fog(0x788b98,35,125);sun.intensity=.85}
+ else{scene.background=new THREE.Color(0x9fc4d5);scene.fog=new THREE.Fog(0x9fc4d5,75,190);sun.intensity=2.1}
  $('weatherBadge').textContent=(w==='Clear'?'☀':w==='Rain'?'🌧':'🌫')+' '+w.toUpperCase()+' · DAY '+campaign.day;
 }
 const riverMat=new THREE.MeshStandardMaterial({color:0x267b9f,roughness:.25,metalness:.12});
@@ -288,6 +288,9 @@ addUnit=function(team,kind,x,z){
  const u=baseAddUnit(team,kind,x,z);
  const stats={spearman:{hp:115,speed:4.1,damage:13,range:3},cavalry:{hp:125,speed:7.1,damage:19,range:3.2},guard:{hp:190,speed:3.5,damage:15,range:2.8}};
  if(stats[kind]){Object.assign(u,{max:stats[kind].hp,hp:stats[kind].hp,speed:stats[kind].speed,damage:stats[kind].damage,range:stats[kind].range});}
+ if(kind==='spearman'){const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.8,6),M.wood);shaft.position.set(-.35,1.35,.18);shaft.rotation.x=-.22;u.mesh.add(shaft);const tip=new THREE.Mesh(new THREE.ConeGeometry(.09,.28,6),M.stone);tip.position.set(-.35,2.36,.28);u.mesh.add(tip)}
+ if(kind==='guard'){const crest=new THREE.Mesh(new THREE.BoxGeometry(.55,.18,.12),M.gold);crest.position.set(0,2.18,.12);u.mesh.add(crest)}
+ if(kind==='cavalry'){const mount=new THREE.Mesh(new THREE.CapsuleGeometry(.38,.68,4,7),mat(team===1?0x67452d:0x4c3029));mount.position.set(0,.68,-.25);mount.rotation.x=Math.PI/2;u.mesh.add(mount)}
  return u;
 };
 const horseLegs=commanderHorse.children.filter(c=>c.geometry&&c.geometry.type==='CylinderGeometry');
