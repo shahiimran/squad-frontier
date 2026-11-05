@@ -30,3 +30,14 @@
 - Added procedural mounted commander horse and mount/dismount control.
 - Added squad status card and mobile action HUD.
 - Added heal, sprint and roll action prototypes.
+
+
+## v1.1 — Ultimate Command Campaign (development preview)
+- Added a unified Kingdom Command panel with Army, Realm, Trade, Diplomacy, Campaign and World tabs.
+- Added spearmen, cavalry and royal guard recruitment with differentiated stats and procedural troop accessories.
+- Added trade exchanges, worker hiring, watchtower construction and kingdom overview.
+- Added four campaign objectives and achievement unlock notifications.
+- Added river crossing, bridge, rolling terrain and animated village residents.
+- Added clear/rain/fog visual presets, day/night lighting and campaign season progression labels.
+- Extended local save metadata for campaign, workers, trades and formation.
+- Preserved the previous third-person battlefield, recruitment, economy, outpost capture, world map, horse toggle, commands and landscape HUD.
