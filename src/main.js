@@ -168,3 +168,144 @@ update=function(dt){
 const oldRecruit=recruit;
 recruit=function(kind){oldRecruit(kind);updateBattleCard()};
 notify('Command & Army controls ready');updateBattleCard();
+
+
+/* v1.1 — Ultimate Command Campaign systems */
+const campaign={mission:0,victories:0,weather:'Clear',diplomacy:'Neutral',day:1,season:0,achievements:[]};
+const missionList=[
+ {name:'Secure the Frontier',desc:'Capture at least one neutral outpost.',test:()=>outposts.some(o=>o.owner===1)},
+ {name:'Raise the Banner',desc:'Control all three battlefield outposts.',test:()=>outposts.every(o=>o.owner===1)},
+ {name:'Build the Host',desc:'Recruit at least 12 living soldiers.',test:()=>units.filter(u=>u.team===1&&u.alive).length>=12},
+ {name:'Break the Keep',desc:'Defeat the rival castle.',test:()=>enemy.health<=0}
+];
+let empireTab='army',weatherClock=0,dayClock=0,workerCount=0,tradeCount=0;
+const empirePanel=$('empirePanel'),empireContent=$('empireContent'),empireStatus=$('empireStatus');
+function empireMessage(s){empireStatus.textContent=s;notify(s)}
+function card(title,desc,action,label){return '<article class="empire-card"><b>'+title+'</b><small>'+desc+'</small><button class="empire-action" data-action="'+action+'">'+label+'</button></article>'}
+function renderEmpire(){
+ if(!empireContent)return;
+ const alive=units.filter(u=>u.team===1&&u.alive).length;
+ const owned=outposts.filter(o=>o.owner===1).length;
+ let cards='';
+ if(empireTab==='army'){
+  cards=card('Infantry','Balanced frontline troops · 60 food','recruit-infantry','RECRUIT · 60 FOOD')+
+  card('Archers','Ranged support · 80 food','recruit-archer','RECRUIT · 80 FOOD')+
+  card('Knights','Armoured heavy troops · 130 food','recruit-knight','RECRUIT · 130 FOOD')+
+  card('Spearmen','Anti-cavalry defensive unit · 95 food','recruit-spearman','RECRUIT · 95 FOOD')+
+  card('Cavalry','Fast mounted squad · 150 food','recruit-cavalry','RECRUIT · 150 FOOD')+
+  card('Royal Guards','Elite castle defenders · 180 food','recruit-guard','RECRUIT · 180 FOOD')+
+  card('Command all','Select every living allied soldier','select','SELECT ALL')+
+  card('Formation','Cycle line, block and wedge','formation','CHANGE FORMATION');
+ }else if(empireTab==='realm'){
+  cards=card('Build a farm','Adds food production · 90 wood','farm','BUILD FARM')+
+  card('Build barracks','Adds recruitment infrastructure · 120 wood','barracks','BUILD BARRACKS')+
+  card('Watchtower','A frontier landmark · 100 wood, 60 stone','tower','BUILD TOWER')+
+  card('Hire workers','Grow your village workforce · 50 gold','workers','HIRE WORKERS')+
+  card('Castle upgrade','Strengthen your keep · 120 stone','upgrade','UPGRADE KEEP')+
+  card('Save campaign','Store local campaign progress','save','SAVE CAMPAIGN')+
+  card('Load campaign','Restore local campaign progress','load','LOAD CAMPAIGN')+
+  card('Realm overview',alive+' soldiers · '+owned+'/3 outposts · '+workerCount+' workers','overview','REFRESH STATUS');
+ }else if(empireTab==='trade'){
+  cards=card('Buy 100 food','Exchange 50 gold for food','buy-food','BUY FOOD')+
+  card('Sell 100 wood','Receive 35 gold','sell-wood','SELL WOOD')+
+  card('Buy 60 stone','Exchange 55 gold for stone','buy-stone','BUY STONE')+
+  card('Sell 60 stone','Receive 40 gold','sell-stone','SELL STONE')+
+  card('Buy 100 wood','Exchange 45 gold for wood','buy-wood','BUY WOOD')+
+  card('Trade ledger',tradeCount+' completed trades','ledger','VIEW LEDGER');
+ }else if(empireTab==='diplomacy'){
+  cards=card('Offer peace','Set rival relations to peace (prototype)','peace','OFFER PEACE')+
+  card('Declare rivalry','Return relations to hostile','war','DECLARE RIVALRY')+
+  card('Send envoy','Spend 40 gold to improve relations','envoy','SEND ENVOY')+
+  card('Relations',campaign.diplomacy,'relations','REFRESH RELATIONS');
+ }else if(empireTab==='campaign'){
+  cards=missionList.map((m,i)=>card('Mission '+(i+1)+': '+m.name,m.desc+' · '+(m.test()?'COMPLETED':'IN PROGRESS'),'mission-'+i,m.test()?'COMPLETED':'CHECK PROGRESS')).join('')+
+  card('Achievements',campaign.achievements.length+' achievements unlocked','achievements','VIEW ACHIEVEMENTS');
+ }else{
+  cards=card('Weather: '+campaign.weather,'Cycle clear, rain and fog conditions','weather','CHANGE WEATHER')+
+  card('Time of day','Day '+campaign.day+' · dynamic daylight','time','ADVANCE TIME')+
+  card('World map','View region ownership and frontier','worldmap','OPEN WORLD MAP')+
+  card('Camera zoom','Use mouse wheel or pinch/scroll to adjust view','zoom','ZOOM OUT')+
+  card('Season','Season '+(campaign.season+1)+' of 4','season','CHANGE SEASON');
+ }
+ empireContent.innerHTML='<div class="empire-grid">'+cards+'</div>';
+ empireContent.querySelectorAll('[data-action]').forEach(btn=>btn.addEventListener('click',()=>empireAction(btn.dataset.action)));
+}
+function empireAction(a){
+ const buy=(key,amount,cost)=>{if(resources.gold<cost)return empireMessage('Not enough gold.');resources.gold-=cost;resources[key]+=amount;tradeCount++;updateHUD();empireMessage('Trade completed.');};
+ if(a.startsWith('recruit-')){const kind=a.slice(8);const costs={infantry:60,archer:80,knight:130,spearman:95,cavalry:150,guard:180};const cost=costs[kind];if(resources.food<cost)return empireMessage('Not enough food.');resources.food-=cost;const n=units.filter(u=>u.team===1&&u.alive).length;const u=addUnit(1,kind,-43+(n%5)*2,43+Math.floor(n/5)*2);u.order='follow';updateHUD();empireMessage(kind+' recruited into your army.');}
+ else if(a==='select'){selectAll();empireMessage('All allied soldiers selected.')}
+ else if(a==='formation'){formation=formation==='line'?'block':formation==='block'?'wedge':'line';document.querySelectorAll('[data-formation]').forEach(b=>b.classList.toggle('active',b.dataset.formation===formation));empireMessage('Formation changed to '+formation+'.')}
+ else if(a==='farm')$('buildFarm').click();
+ else if(a==='barracks')$('buildBarracks').click();
+ else if(a==='tower'){if(resources.wood<100||resources.stone<60)return empireMessage('Need 100 wood and 60 stone.');resources.wood-=100;resources.stone-=60;buildings.push(building(-72+buildings.length*5,58,'tower'));empireMessage('Watchtower raised on the frontier.');updateHUD();}
+ else if(a==='workers'){if(resources.gold<50)return empireMessage('Need 50 gold.');resources.gold-=50;workerCount+=5;empireMessage('Five villagers joined your workforce.');updateHUD();}
+ else if(a==='upgrade')$('upgrade').click();
+ else if(a==='save')$('save').click();
+ else if(a==='load')$('load').click();
+ else if(a==='overview')empireMessage(units.filter(u=>u.team===1&&u.alive).length+' soldiers · '+outposts.filter(o=>o.owner===1).length+' outposts · '+workerCount+' workers.');
+ else if(a==='buy-food')buy('food',100,50);
+ else if(a==='sell-wood'){if(resources.wood<100)return empireMessage('Not enough wood.');resources.wood-=100;resources.gold+=35;tradeCount++;updateHUD();empireMessage('Sold 100 wood for 35 gold.');}
+ else if(a==='buy-stone')buy('stone',60,55);
+ else if(a==='sell-stone'){if(resources.stone<60)return empireMessage('Not enough stone.');resources.stone-=60;resources.gold+=40;tradeCount++;updateHUD();empireMessage('Sold 60 stone for 40 gold.');}
+ else if(a==='buy-wood')buy('wood',100,45);
+ else if(a==='ledger')empireMessage('Trade ledger: '+tradeCount+' completed transactions this session.');
+ else if(a==='peace'){campaign.diplomacy='Peace';empireMessage('A peace proposal was recorded. Rival AI remains a gameplay prototype.');}
+ else if(a==='war'){campaign.diplomacy='Hostile';empireMessage('Relations are hostile. Rival forces remain active.');}
+ else if(a==='envoy'){if(resources.gold<40)return empireMessage('Need 40 gold.');resources.gold-=40;campaign.diplomacy='Improving';updateHUD();empireMessage('Your envoy has departed.');}
+ else if(a==='relations')empireMessage('Current rival relations: '+campaign.diplomacy+'.');
+ else if(a.startsWith('mission-')){const i=Number(a.slice(8));empireMessage(missionList[i].name+': '+(missionList[i].test()?'Mission completed!':'Not completed yet — '+missionList[i].desc));}
+ else if(a==='achievements')empireMessage(campaign.achievements.length?campaign.achievements.join(' · '):'No achievements unlocked yet.');
+ else if(a==='weather'){setWeather(campaign.weather==='Clear'?'Rain':campaign.weather==='Rain'?'Fog':'Clear');}
+ else if(a==='time'){campaign.day++;dayClock=0;empireMessage('Advanced to day '+campaign.day+'.');}
+ else if(a==='worldmap'){$('openWorldMap').click();}
+ else if(a==='zoom'){zoom=Math.min(48,zoom+5);empireMessage('Camera zoom adjusted.');}
+ else if(a==='season'){campaign.season=(campaign.season+1)%4;const seasons=['Spring','Summer','Autumn','Winter'];empireMessage('Season changed: '+seasons[campaign.season]+'.');}
+ renderEmpire();
+}
+$('empireOpen').onclick=()=>{renderEmpire();empirePanel.classList.add('open');empirePanel.setAttribute('aria-hidden','false')};
+$('empireClose').onclick=()=>{empirePanel.classList.remove('open');empirePanel.setAttribute('aria-hidden','true')};
+empirePanel.addEventListener('click',e=>{if(e.target===empirePanel){empirePanel.classList.remove('open');empirePanel.setAttribute('aria-hidden','true')}});
+document.querySelectorAll('[data-tab]').forEach(btn=>btn.onclick=()=>{empireTab=btn.dataset.tab;document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===btn));renderEmpire()});
+function setWeather(w){
+ campaign.weather=w;
+ scene.fog.density=0;
+ if(w==='Fog'){scene.fog=new THREE.FogExp2(0x9aa9ad,.012);renderer.setClearColor(0x9aa9ad);sun.intensity=1.05}
+ else if(w==='Rain'){scene.fog=new THREE.Fog(0x788b98,35,125);renderer.setClearColor(0x788b98);sun.intensity=.85}
+ else{scene.fog=new THREE.Fog(0x9fc4d5,75,190);renderer.setClearColor(0x9fc4d5);sun.intensity=2.1}
+ $('weatherBadge').textContent=(w==='Clear'?'☀':w==='Rain'?'🌧':'🌫')+' '+w.toUpperCase()+' · DAY '+campaign.day;
+}
+const riverMat=new THREE.MeshStandardMaterial({color:0x267b9f,roughness:.25,metalness:.12});
+const river=new THREE.Mesh(new THREE.PlaneGeometry(9,178),riverMat);river.rotation.x=-Math.PI/2;river.position.set(15,.035,-2);scene.add(river);
+const bridge=box(13,.55,7,M.wood,15,.32,4);for(let i=0;i<7;i++)box(.12,.8,.12,M.dark,10+i*1.65,.75,4);
+for(let i=0;i<9;i++){const hill=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),M.grass2);hill.scale.set(7+Math.random()*5,1.5+Math.random()*2,8+Math.random()*7);hill.position.set((Math.random()-.5)*180,0,(Math.random()-.5)*180);hill.receiveShadow=true;scene.add(hill)}
+const villagers=[];
+function spawnVillagers(){
+ for(let i=0;i<8;i++){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CapsuleGeometry(.25,.55,3,6),mat(0xb58c5e));body.position.y=.75;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.18,8,8),M.skin);head.position.y=1.25;g.add(head);g.position.set(-58+(i%4)*3,0,52+Math.floor(i/4)*3);scene.add(g);villagers.push({mesh:g,phase:Math.random()*6})}
+}
+spawnVillagers();
+const baseAddUnit=addUnit;
+addUnit=function(team,kind,x,z){
+ const u=baseAddUnit(team,kind,x,z);
+ const stats={spearman:{hp:115,speed:4.1,damage:13,range:3},cavalry:{hp:125,speed:7.1,damage:19,range:3.2},guard:{hp:190,speed:3.5,damage:15,range:2.8}};
+ if(stats[kind]){Object.assign(u,{max:stats[kind].hp,hp:stats[kind].hp,speed:stats[kind].speed,damage:stats[kind].damage,range:stats[kind].range});}
+ return u;
+};
+const horseLegs=commanderHorse.children.filter(c=>c.geometry&&c.geometry.type==='CylinderGeometry');
+const baseUpdate=update;
+update=function(dt){
+ baseUpdate(dt);
+ dayClock+=dt;weatherClock+=dt;
+ const daylight=.58+Math.sin(dayClock*.035)*.42;
+ sun.intensity=campaign.weather==='Clear'?1.1+daylight:campaign.weather==='Rain'?.75:campaign.weather==='Fog'?.95:1;
+ sun.position.set(Math.cos(dayClock*.035)*55,45+daylight*35,Math.sin(dayClock*.035)*45);
+ if(dayClock>240){dayClock=0;campaign.day++;$('weatherBadge').textContent=campaign.weather.toUpperCase()+' · DAY '+campaign.day}
+ horseLegs.forEach((leg,i)=>{leg.rotation.x=mounted?Math.sin(clock*9+i*Math.PI)*.32:0});
+ villagers.forEach((v,i)=>{v.phase+=dt*.5;v.mesh.position.x+=Math.sin(v.phase)*dt*.18;v.mesh.position.z+=Math.cos(v.phase*.7)*dt*.12});
+ if(weatherClock>100){weatherClock=0;if(Math.random()<.4)setWeather(['Clear','Rain','Fog'][Math.floor(Math.random()*3)])}
+ missionList.forEach((m,i)=>{if(m.test()&&!campaign.achievements.includes(m.name)){campaign.achievements.push(m.name);notify('ACHIEVEMENT UNLOCKED: '+m.name)}});
+};
+const baseSave=$('save').onclick;
+$('save').onclick=()=>{baseSave?.();const old=localStorage.getItem('sf-kingdom-save');if(old){const d=JSON.parse(old);d.campaign=campaign;d.workerCount=workerCount;d.tradeCount=tradeCount;d.formation=formation;localStorage.setItem('sf-kingdom-save',JSON.stringify(d));}empireMessage('Campaign and kingdom progress saved locally.')};
+const baseLoad=$('load').onclick;
+$('load').onclick=()=>{baseLoad?.();const raw=localStorage.getItem('sf-kingdom-save');if(raw){try{const d=JSON.parse(raw);if(d.campaign)Object.assign(campaign,d.campaign);workerCount=d.workerCount||0;tradeCount=d.tradeCount||0;if(d.formation)formation=d.formation;setWeather(campaign.weather||'Clear')}catch(e){console.warn('Campaign extension could not load',e)}}renderEmpire()};
+setWeather('Clear');renderEmpire();
