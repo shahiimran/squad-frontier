@@ -10,12 +10,12 @@ const requiredIds = [
   'empireClose','worldMap','openWorldMap','closeWorldMap'
 ];
 for (const id of requiredIds) {
-  assert.match(html, new RegExp('id=["\\']' + id + '["\\']'), `Missing UI element: ${id}`);
+  assert.match(html, new RegExp(`id=["']${id}["']`), `Missing UI element: ${id}`);
 }
 for (const token of [
   'function setOrder','function renderEmpire','function empireAction',
   'function setWeather','function battles','function ai','function economy',
-  'function rival','data-formation','frontierRegions','missionList'
+  'function rival','data-formation','frontierRegions','missionList',\n  "kind==='spearman'","kind==='cavalry'","kind==='guard'"
 ]) {
   assert.ok(js.includes(token), `Missing gameplay system: ${token}`);
 }
