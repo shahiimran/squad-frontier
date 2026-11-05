@@ -1,15 +1,14 @@
 # Changelog
 
+## v0.5 — Modern UI refresh
+- Modern glassmorphism HUD and refined typography.
+- Responsive resource, objective, command and event panels.
+- Improved button hover/focus/touch states.
+- Refined intro modal, toast notifications and mobile joystick visuals.
+- Added reduced-motion support.
+
 ## v0.4 — Kingdoms: Full Gameplay Foundation
-- Rebuilt the main game loop and HUD around kingdom management.
-- Added player and rival castles, a settlement, environmental props and three neutral outposts.
-- Added infantry, archer and knight recruitment with different unit stats.
-- Added unit selection, Select Army, Follow, Hold and Move Selected orders.
-- Added farms, barracks, passive resource income and castle upgrades.
-- Added rival troop reinforcements and abstract encounters.
-- Added neutral outpost capture and rival keep objective.
-- Added local browser save/load.
-- Added desktop and mobile movement controls.
+- Added castles, troop classes, unit orders, economy, buildings, outpost capture, rival reinforcements and local save/load.
 
 ## v0.3 — Castles & Armies
 - Added medieval castles, recruitable soldiers, gold HUD and arcade siege prototype.
