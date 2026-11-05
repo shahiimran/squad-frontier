@@ -60,14 +60,14 @@ if(selected.size){selected.forEach(id=>{const u=units.find(v=>v.id===id);if(u){u
 const commander={position:new THREE.Vector3(-43,0,48),rotation:{y:0}},commanderTarget=new THREE.Vector3(-43,0,48);const avatar=person(1,'knight');scene.add(avatar);avatar.position.copy(commander.position);
 function moveToward(u,target,speed,dt){const d=target.clone().sub(u.mesh.position);d.y=0;if(d.length()>.3){d.normalize();u.mesh.position.addScaledVector(d,speed*dt);u.mesh.rotation.y=Math.atan2(d.x,d.z)}}
 function ai(dt){const enemies=units.filter(u=>u.team===-1&&u.alive),friends=units.filter(u=>u.team===1&&u.alive);for(const e of enemies){let near=friends.filter(f=>f.mesh.position.distanceTo(e.mesh.position)<(e.range+f.range+3)).sort((a,b)=>a.mesh.position.distanceTo(e.mesh.position)-b.mesh.position.distanceTo(e.mesh.position))[0];if(near){e.cool-=dt;if(e.cool<=0){near.hp-=e.damage;e.cool=1.4;if(near.hp<=0){near.alive=false;scene.remove(near.mesh);selected.delete(near.id)}}}else{const goal=new THREE.Vector3(home.x+8,0,home.z+8);moveToward(e,goal,e.speed*.65,dt)}}}
-function battles(dt){const friends=units.filter(u=>u.alive&&u.team===1),enemies=units.filter(u=>u.alive&&u.team===-1);for(const u of friends){if(u.order==='follow'){const offset=new THREE.Vector3(((u.id%3)-1)*2.5,0,5+Math.floor(u.id%4)*1.5).applyAxisAngle(new THREE.Vector3(0,1,0),avatar.rotation.y);u.target.copy(avatar.position).add(offset);moveToward(u,u.target,u.speed,dt)}else if(u.order==='move'||u.order==='siege')moveToward(u,u.target,u.speed,dt);
+function battles(dt){const friends=units.filter(u=>u.alive&&u.team===1),enemies=units.filter(u=>u.alive&&u.team===-1);for(const u of friends){if(u.order==='follow'){const idx=friends.indexOf(u),col=(idx%5)-2,row=Math.floor(idx/5);let ox=col*2.6,oz=5+row*2.7;if(formation==='block'){ox=((idx%3)-1)*2.5;oz=4+Math.floor(idx/3)*2.5}else if(formation==='wedge'){const rank=Math.floor(Math.sqrt(idx*2));ox=(idx-rank*(rank+1)/2-rank/2)*2.8;oz=5+rank*2.5}const offset=new THREE.Vector3(ox,0,oz).applyAxisAngle(new THREE.Vector3(0,1,0),avatar.rotation.y);u.target.copy(avatar.position).add(offset);moveToward(u,u.target,u.speed,dt)}else if(u.order==='rush'){u.target.set(enemy.x,0,enemy.z);moveToward(u,u.target,u.speed*1.25,dt)}else if(u.order==='move'||u.order==='siege')moveToward(u,u.target,u.speed,dt);
 let foe=enemies.filter(e=>e.mesh.position.distanceTo(u.mesh.position)<u.range+2).sort((a,b)=>a.mesh.position.distanceTo(u.mesh.position)-b.mesh.position.distanceTo(u.mesh.position))[0];if(foe){u.cool-=dt;if(u.cool<=0){foe.hp-=u.damage;u.cool=u.kind==='archer'?1.25:1;if(foe.hp<=0){foe.alive=false;scene.remove(foe.mesh);resources.gold+=12;resources.food+=8}}}
 if(u.order==='siege'&&u.mesh.position.distanceTo(new THREE.Vector3(enemy.x,0,enemy.z))<15){u.cool-=dt;if(u.cool<=0){enemy.health=Math.max(0,enemy.health-1.5);u.cool=1.2}}}
 for(const o of outposts){let p=friends.filter(u=>u.mesh.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<7).length,e=enemies.filter(u=>u.mesh.position.distanceTo(new THREE.Vector3(o.x,0,o.z))<7).length;const delta=p-e;o.p=THREE.MathUtils.clamp(o.p+delta*dt*.12,-1,1);if(o.p>.95)o.owner=1;if(o.p<-.95)o.owner=-1;o.ring.material.color.set(o.owner===1?0x42baff:o.owner===-1?0xf08b60:0xe9dfba);o.flag.material.color.set(o.owner===1?0x238ec8:o.owner===-1?0xb9573e:0xe0b34d)}
 if(enemy.health<=0){enemy.health=0;notify('Victory! The rival keep has fallen.');paused=true}}
 let income=0,aiSpawn=0;function economy(dt){income+=dt;if(income>=5){income=0;resources.gold+=8+outposts.filter(o=>o.owner===1).length*3;resources.wood+=buildings.filter(b=>b.team===1&&b.type==='farm').length*4;resources.food+=buildings.filter(b=>b.team===1&&b.type==='farm').length*5;resources.stone+=2}}
 function rival(dt){aiSpawn+=dt;if(aiSpawn>28&&units.filter(u=>u.team===-1&&u.alive).length<15){aiSpawn=0;addUnit(-1,Math.random()>.7?'archer':'infantry',50+Math.random()*5,-36+Math.random()*5)}}
-function update(dt){if(paused)return;clock+=dt;const forward=(keys.has('w')||keys.has('arrowup')?-1:0)+(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y,side=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;const dir=new THREE.Vector3(side,0,forward);if(dir.lengthSq()){dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);avatar.position.addScaledVector(dir,10*dt);avatar.rotation.y=Math.atan2(dir.x,dir.z);commander.rotation.y=avatar.rotation.y;commander.position.copy(avatar.position)}else if(avatar.position.distanceTo(commanderTarget)>.5&&selected.size===0)moveToward({mesh:avatar},commanderTarget,8,dt);battles(dt);ai(dt);rival(dt);economy(dt);updateHUD()}
+function update(dt){if(paused)return;clock+=dt;const forward=(keys.has('w')||keys.has('arrowup')?-1:0)+(keys.has('s')||keys.has('arrowdown')?1:0)-joy.y,side=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0)+joy.x;const dir=new THREE.Vector3(side,0,forward);if(dir.lengthSq()){dir.normalize().applyAxisAngle(new THREE.Vector3(0,1,0),yaw);avatar.position.addScaledVector(dir,10*(sprinting?1.55:1)*dt);avatar.rotation.y=Math.atan2(dir.x,dir.z);commander.rotation.y=avatar.rotation.y;commander.position.copy(avatar.position)}else if(avatar.position.distanceTo(commanderTarget)>.5&&selected.size===0)moveToward({mesh:avatar},commanderTarget,8,dt);battles(dt);ai(dt);rival(dt);economy(dt);updateHUD()}
 let joy={x:0,y:0},joyOn=false;const stick=$('mobileStick'),nub=$('nub');stick.addEventListener('pointerdown',e=>{joyOn=true;stick.setPointerCapture(e.pointerId);moveJoy(e)});stick.addEventListener('pointermove',e=>{if(joyOn)moveJoy(e)});stick.addEventListener('pointerup',()=>{joyOn=false;joy={x:0,y:0};nub.style.transform='translate(0,0)'});function moveJoy(e){const r=stick.getBoundingClientRect();let x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),d=Math.hypot(x,y),m=34;if(d>m){x=x/d*m;y=y/d*m}joy={x:x/m,y:y/m};nub.style.transform='translate('+x+'px,'+y+'px)'}
 function cameraUpdate(){const target=avatar.position.clone().add(new THREE.Vector3(0,1,0));const off=new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch)).multiplyScalar(zoom);camera.position.copy(target).add(off);camera.lookAt(target)}
 let prev=0;function frame(t){const dt=Math.min((t-prev)/1000||0,.04);prev=t;update(dt);cameraUpdate();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
@@ -117,3 +117,54 @@ setInterval(()=>{
   notify('Rival rulers expanded into '+pick.r.name+'. Check the world map.');
  }
 },35000);
+
+
+/* v1.0 — Command & Army battlefield gameplay layer */
+const commanderHorse=new THREE.Group();scene.add(commanderHorse);
+const horseCoat=mat(0x63351f),horseDark=mat(0x241914),horseLeather=mat(0x9b6b35);
+const horseBody=new THREE.Mesh(new THREE.CapsuleGeometry(.55,.95,5,10),horseCoat);horseBody.rotation.z=Math.PI/2;horseBody.position.y=.95;commanderHorse.add(horseBody);
+const horseNeck=new THREE.Mesh(new THREE.CapsuleGeometry(.27,.7,4,8),horseCoat);horseNeck.position.set(0,1.55,.48);horseNeck.rotation.x=-.35;commanderHorse.add(horseNeck);
+const horseHead=new THREE.Mesh(new THREE.BoxGeometry(.34,.48,.48),horseCoat);horseHead.position.set(0,1.9,.76);commanderHorse.add(horseHead);
+const horseMane=new THREE.Mesh(new THREE.BoxGeometry(.12,.6,.7),horseDark);horseMane.position.set(0,1.75,.22);commanderHorse.add(horseMane);
+for(const x of [-.34,.34])for(const z of [-.48,.48]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.095,.07,.78,7),horseDark);leg.position.set(x,.43,z);commanderHorse.add(leg)}
+const saddle=new THREE.Mesh(new THREE.BoxGeometry(.75,.17,.75),horseLeather);saddle.position.set(0,1.48,-.04);commanderHorse.add(saddle);
+avatar.visible=false;
+let mounted=true,sprinting=false,formation='line',commanderStamina=100,healCooldown=0;
+function setOrder(order){
+ const list=units.filter(u=>u.alive&&u.team===1);
+ if(!selected.size)list.forEach(u=>selected.add(u.id));
+ selected.forEach(id=>{const u=units.find(v=>v.id===id);if(!u)return;u.order=order;if(order==='follow')u.target.copy(avatar.position);if(order==='hold')u.target.copy(u.mesh.position);if(order==='rush'||order==='siege')u.target.set(enemy.x,0,enemy.z)});
+ notify('COMMAND: '+order.toUpperCase()+' · '+selected.size+' SOLDIERS');updateBattleCard();
+}
+function updateBattleCard(){
+ const count=units.filter(u=>u.alive&&u.team===1).length;
+ $('unitCount').textContent=selected.size+' SELECTED / '+count+' SOLDIERS';
+ const first=units.find(u=>selected.has(u.id));$('unitOrder').textContent='ORDER: '+(first?first.order.toUpperCase():'FOLLOW');
+}
+$('cmdRush').onclick=()=>setOrder('rush');$('cmdAttack').onclick=()=>{setOrder('siege');attackMode=false};
+$('cmdFollow').onclick=()=>setOrder('follow');$('cmdHold').onclick=()=>setOrder('hold');
+$('cmdMount').onclick=()=>{mounted=!mounted;avatar.visible=!mounted;$('cmdMount').innerHTML='<span>♞</span>'+(mounted?'DISMOUNT':'MOUNT');notify(mounted?'Mounted commander':'Commander on foot')};
+$('cmdSprint').onclick=()=>{sprinting=!sprinting;$('cmdSprint').style.borderColor=sprinting?'#e7c84d':'#10151d';notify(sprinting?'Sprint enabled':'Sprint disabled')};
+$('cmdRoll').onclick=()=>{commanderStamina=Math.max(0,commanderStamina-18);avatar.position.add(new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(3));notify('Dodge roll')};
+$('cmdHeal').onclick=()=>{if(healCooldown>0)return notify('Heal is recharging');healCooldown=20;units.filter(u=>u.team===1&&u.alive&&u.mesh.position.distanceTo(avatar.position)<12).forEach(u=>u.hp=Math.min(u.max,u.hp+35));notify('Nearby squad healed')};
+document.querySelectorAll('[data-formation]').forEach(btn=>btn.onclick=()=>{formation=btn.dataset.formation;document.querySelectorAll('[data-formation]').forEach(x=>x.classList.toggle('active',x===btn));notify('Formation: '+formation.toUpperCase());});
+const oldSelectAll=selectAll;
+selectAll=function(){oldSelectAll();updateBattleCard()};
+const oldGroundClick=groundClick;
+groundClick=function(x,y){oldGroundClick(x,y);updateBattleCard()};
+const oldUpdate=update;
+update=function(dt){
+ oldUpdate(dt);
+ commanderHorse.visible=mounted;
+ commanderHorse.position.set(avatar.position.x,0,avatar.position.z);
+ commanderHorse.rotation.y=avatar.rotation.y;
+ commanderHorse.position.y=Math.sin(clock*7)*.035;
+ if(mounted){avatar.position.y=1.48;avatar.rotation.y=commanderHorse.rotation.y}
+ if(sprinting&&keys.size){} 
+ healCooldown=Math.max(0,healCooldown-dt);
+ commanderStamina=Math.min(100,commanderStamina+(sprinting?-.08:.12));
+ updateBattleCard();
+};
+const oldRecruit=recruit;
+recruit=function(kind){oldRecruit(kind);updateBattleCard()};
+notify('Command & Army controls ready');updateBattleCard();
