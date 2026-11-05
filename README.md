@@ -87,3 +87,15 @@ This is an expanding prototype, not yet a finished commercial-scale game. Combat
 - Added rival kingdom expansion that periodically claims unowned frontier regions while the game is running.
 - Added a responsive world-map overlay with ownership legend and region descriptions.
 - This is a lightweight strategic layer; territory income, diplomacy, path-connected campaigns and persistent rival simulation are future upgrades.
+
+
+## v1.0 — Command & Army gameplay direction
+This release introduces a Command-and-Army-inspired battlefield interface and commander/squad command layer:
+- Third-person battlefield command HUD: Rush, Attack, Follow and Hold.
+- Three selectable formation presets (line, block and wedge) in the command UI.
+- Mounted commander visual with a procedural horse model and mount/dismount toggle.
+- Squad status card showing selected and total soldiers plus current order.
+- Mobile-friendly action controls for heal, sprint and dodge-roll feedback.
+- Existing recruitable infantry, archers, knights, unit selection and battlefield remain in place.
+
+This is a gameplay foundation/prototype. Formation presets currently set command intent in the UI; full geometric formation movement, animated horse locomotion, dedicated mounted combat, real healing balance, and touch camera/targeting polish remain future work.
