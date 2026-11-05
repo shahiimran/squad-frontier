@@ -15,3 +15,10 @@
 
 ## v0.2 — 3D Foundation
 - Added Three.js world, third-person camera, commander and four helpers.
+
+
+## v0.9 — World Map & Rival AI
+- Added nine strategic regions across the frontier.
+- Added neutral territory claims for gold and resource rewards.
+- Added periodic rival AI expansion into neutral regions.
+- Added responsive strategic map overlay and ownership status.

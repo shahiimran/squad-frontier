@@ -79,3 +79,11 @@ This is an expanding prototype, not yet a finished commercial-scale game. Combat
 - Improved resource readability, objective cards, command buttons, focus states and touch joystick styling.
 - Added reduced-motion support and smaller-screen layout refinements.
 - Existing Three.js gameplay code and controls are unchanged in this visual-only release.
+
+
+## v0.9 — World Map & Rival AI
+- Added a strategic nine-region frontier map with player, rival and neutral ownership.
+- Added claimable neutral regions with a gold cost and starter resource rewards.
+- Added rival kingdom expansion that periodically claims unowned frontier regions while the game is running.
+- Added a responsive world-map overlay with ownership legend and region descriptions.
+- This is a lightweight strategic layer; territory income, diplomacy, path-connected campaigns and persistent rival simulation are future upgrades.

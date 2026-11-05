@@ -73,3 +73,47 @@ function cameraUpdate(){const target=avatar.position.clone().add(new THREE.Vecto
 let prev=0;function frame(t){const dt=Math.min((t-prev)/1000||0,.04);prev=t;update(dt);cameraUpdate();renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))});
 updateHUD();
+
+/* v0.9 — World Map & Rival Kingdom AI */
+const frontierRegions=[
+ {name:'Highwatch',owner:'player',income:'+12 gold',desc:'Your ancestral seat'},
+ {name:'Pine March',owner:'neutral',income:'+5 wood',desc:'Dense timberland'},
+ {name:'Ashen Vale',owner:'rival',income:'+8 gold',desc:'Rival border province'},
+ {name:'Old Bridge',owner:'player',income:'+4 gold',desc:'A strategic crossing'},
+ {name:'Greenfields',owner:'neutral',income:'+8 food',desc:'Rich farmland'},
+ {name:'Redwater',owner:'rival',income:'+6 stone',desc:'Quarry settlements'},
+ {name:'Westmoor',owner:'neutral',income:'+5 food',desc:'Quiet frontier villages'},
+ {name:'Kingsroad',owner:'neutral',income:'+7 gold',desc:'Busy trade route'},
+ {name:'Stormpeak',owner:'rival',income:'+5 stone',desc:'Mountain stronghold'}
+];
+let frontierTurn=0;
+const wm=$('worldMap'),wmGrid=$('wmGrid');
+function renderWorldMap(){
+ if(!wmGrid)return;
+ wmGrid.innerHTML=frontierRegions.map((r,i)=>{
+  const label=r.owner==='player'?'YOUR REALM':r.owner==='rival'?'RIVAL KINGDOM':'NEUTRAL';
+  const action=r.owner==='neutral'?'<button data-claim="'+i+'">CLAIM · 100G</button>':r.owner==='player'?'<button disabled>CONTROLLED</button>':'<button disabled>RIVAL TERRITORY</button>';
+  return '<article class="wm-tile '+r.owner+'"><div><strong>'+r.name+'</strong><br><small>'+r.desc+'</small></div><div><small>'+label+' · '+r.income+'</small><br>'+action+'</div></article>';
+ }).join('');
+ wmGrid.querySelectorAll('[data-claim]').forEach(btn=>btn.addEventListener('click',()=>{
+  const region=frontierRegions[Number(btn.dataset.claim)];
+  if(resources.gold<100){$('wmStatus').textContent='You need 100 gold to claim this frontier.';return}
+  resources.gold-=100;region.owner='player';resources.wood+=18;resources.food+=12;
+  $('wmStatus').textContent=region.name+' joined your realm. Resource stores received a small supply.';
+  renderWorldMap();updateHUD();
+ }));
+}
+$('openWorldMap').onclick=()=>{renderWorldMap();wm.classList.add('open');wm.setAttribute('aria-hidden','false')};
+$('closeWorldMap').onclick=()=>{wm.classList.remove('open');wm.setAttribute('aria-hidden','true')};
+wm.addEventListener('click',e=>{if(e.target===wm){wm.classList.remove('open');wm.setAttribute('aria-hidden','true')}});
+setInterval(()=>{
+ if(!started||paused)return;
+ frontierTurn++;
+ const neutral=frontierRegions.map((r,i)=>({r,i})).filter(x=>x.r.owner==='neutral');
+ if(neutral.length){
+  const pick=neutral[Math.floor(Math.random()*neutral.length)];
+  pick.r.owner='rival';
+  if(wm.classList.contains('open'))renderWorldMap();
+  notify('Rival rulers expanded into '+pick.r.name+'. Check the world map.');
+ }
+},35000);
