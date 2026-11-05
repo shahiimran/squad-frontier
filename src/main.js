@@ -117,3 +117,54 @@ setInterval(()=>{
   notify('Rival rulers expanded into '+pick.r.name+'. Check the world map.');
  }
 },35000);
+
+
+/* v1.0 — Command & Army battlefield gameplay layer */
+const commanderHorse=new THREE.Group();scene.add(commanderHorse);
+const horseCoat=mat(0x63351f),horseDark=mat(0x241914),horseLeather=mat(0x9b6b35);
+const horseBody=new THREE.Mesh(new THREE.CapsuleGeometry(.55,.95,5,10),horseCoat);horseBody.rotation.z=Math.PI/2;horseBody.position.y=.95;commanderHorse.add(horseBody);
+const horseNeck=new THREE.Mesh(new THREE.CapsuleGeometry(.27,.7,4,8),horseCoat);horseNeck.position.set(0,1.55,.48);horseNeck.rotation.x=-.35;commanderHorse.add(horseNeck);
+const horseHead=new THREE.Mesh(new THREE.BoxGeometry(.34,.48,.48),horseCoat);horseHead.position.set(0,1.9,.76);commanderHorse.add(horseHead);
+const horseMane=new THREE.Mesh(new THREE.BoxGeometry(.12,.6,.7),horseDark);horseMane.position.set(0,1.75,.22);commanderHorse.add(horseMane);
+for(const x of [-.34,.34])for(const z of [-.48,.48]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.095,.07,.78,7),horseDark);leg.position.set(x,.43,z);commanderHorse.add(leg)}
+const saddle=new THREE.Mesh(new THREE.BoxGeometry(.75,.17,.75),horseLeather);saddle.position.set(0,1.48,-.04);commanderHorse.add(saddle);
+avatar.visible=false;
+let mounted=true,sprinting=false,formation='line',commanderStamina=100,healCooldown=0;
+function setOrder(order){
+ const list=units.filter(u=>u.alive&&u.team===1);
+ if(!selected.size)list.forEach(u=>selected.add(u.id));
+ selected.forEach(id=>{const u=units.find(v=>v.id===id);if(!u)return;u.order=order;if(order==='follow')u.target.copy(avatar.position);if(order==='hold')u.target.copy(u.mesh.position);if(order==='rush'||order==='siege')u.target.set(enemy.x,0,enemy.z)});
+ notify('COMMAND: '+order.toUpperCase()+' · '+selected.size+' SOLDIERS');updateBattleCard();
+}
+function updateBattleCard(){
+ const count=units.filter(u=>u.alive&&u.team===1).length;
+ $('unitCount').textContent=selected.size+' SELECTED / '+count+' SOLDIERS';
+ const first=units.find(u=>selected.has(u.id));$('unitOrder').textContent='ORDER: '+(first?first.order.toUpperCase():'FOLLOW');
+}
+$('cmdRush').onclick=()=>setOrder('rush');$('cmdAttack').onclick=()=>{setOrder('siege');attackMode=false};
+$('cmdFollow').onclick=()=>setOrder('follow');$('cmdHold').onclick=()=>setOrder('hold');
+$('cmdMount').onclick=()=>{mounted=!mounted;avatar.visible=!mounted;$('cmdMount').innerHTML='<span>♞</span>'+(mounted?'DISMOUNT':'MOUNT');notify(mounted?'Mounted commander':'Commander on foot')};
+$('cmdSprint').onclick=()=>{sprinting=!sprinting;$('cmdSprint').style.borderColor=sprinting?'#e7c84d':'#10151d';notify(sprinting?'Sprint enabled':'Sprint disabled')};
+$('cmdRoll').onclick=()=>{commanderStamina=Math.max(0,commanderStamina-18);avatar.position.add(new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)).multiplyScalar(3));notify('Dodge roll')};
+$('cmdHeal').onclick=()=>{if(healCooldown>0)return notify('Heal is recharging');healCooldown=20;units.filter(u=>u.team===1&&u.alive&&u.mesh.position.distanceTo(avatar.position)<12).forEach(u=>u.hp=Math.min(u.max,u.hp+35));notify('Nearby squad healed')};
+document.querySelectorAll('[data-formation]').forEach(btn=>btn.onclick=()=>{formation=btn.dataset.formation;document.querySelectorAll('[data-formation]').forEach(x=>x.classList.toggle('active',x===btn));notify('Formation: '+formation.toUpperCase());});
+const oldSelectAll=selectAll;
+selectAll=function(){oldSelectAll();updateBattleCard()};
+const oldGroundClick=groundClick;
+groundClick=function(x,y){oldGroundClick(x,y);updateBattleCard()};
+const oldUpdate=update;
+update=function(dt){
+ oldUpdate(dt);
+ commanderHorse.visible=mounted;
+ commanderHorse.position.set(avatar.position.x,0,avatar.position.z);
+ commanderHorse.rotation.y=avatar.rotation.y;
+ commanderHorse.position.y=Math.sin(clock*7)*.035;
+ if(mounted){avatar.position.y=1.48;avatar.rotation.y=commanderHorse.rotation.y}
+ if(sprinting&&keys.size){} 
+ healCooldown=Math.max(0,healCooldown-dt);
+ commanderStamina=Math.min(100,commanderStamina+(sprinting?-.08:.12));
+ updateBattleCard();
+};
+const oldRecruit=recruit;
+recruit=function(kind){oldRecruit(kind);updateBattleCard()};
+notify('Command & Army controls ready');updateBattleCard();
