@@ -22,3 +22,11 @@
 - Added neutral territory claims for gold and resource rewards.
 - Added periodic rival AI expansion into neutral regions.
 - Added responsive strategic map overlay and ownership status.
+
+
+## v1.0 — Command & Army battlefield direction
+- Added Rush, Attack, Follow and Hold squad command controls.
+- Added line, block and wedge formation presets.
+- Added procedural mounted commander horse and mount/dismount control.
+- Added squad status card and mobile action HUD.
+- Added heal, sprint and roll action prototypes.
